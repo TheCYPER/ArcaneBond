@@ -10,6 +10,7 @@ import {
   calculateBossDamage,
   calculateEnemyDamage,
   calculatePlayerDamage,
+  resolveRadialBarrier,
   shouldEnterBossPhaseTwo
 } from "../systems/combat-rules.js";
 import { applyWinUnlocks, RunSession } from "../systems/session.js";
@@ -87,6 +88,7 @@ export class RunScene extends Phaser.Scene {
     this.alternatingCasts = 0;
     this.roomSecondWakeUsed = false;
     this.nextEncounterDanger = false;
+    this.worldFreeze = 0;
     this.tutorial = { step: 1, supportShot: false, damageShot: false, bond: false, revived: false };
 
     this.physics.world.setBounds(ARENA.left, ARENA.top, ARENA.right - ARENA.left, ARENA.bottom - ARENA.top);
@@ -264,6 +266,7 @@ export class RunScene extends Phaser.Scene {
         if (curse.triggered) this.damagePlayer(model, 2.2, { curse: true });
       }
     }
+    this.worldFreeze = Math.max(0, this.worldFreeze - dt);
   }
 
   cast(model, abilityKey) {
@@ -343,7 +346,15 @@ export class RunScene extends Phaser.Scene {
   castControlZone(model, ability) {
     const x = clamp(model.sprite.x + model.facing.x * 32, ARENA.left + ability.radius, ARENA.right - ability.radius);
     const y = clamp(model.sprite.y + model.facing.y * 32, ARENA.top + ability.radius, ARENA.bottom - ability.radius);
-    this.createZone("control", x, y, ability.radius, ability.duration, { owner: model.slot, wizardId: model.wizard.id });
+    const zone = this.createZone("control", x, y, ability.radius, ability.duration, {
+      owner: model.slot,
+      wizardId: model.wizard.id,
+      applies: ability.applies,
+      statusDuration: ability.statusDuration,
+      pullRadius: ability.pullRadius,
+      pullStrength: ability.pullStrength
+    });
+    if (zone.applies) this.applyZoneSetupStatus(zone, zone.pullRadius || zone.radius);
     UI.say(model.wizard.name, model.wizard.id === "star" ? "星环展开，准备把它们聚在一起。" : "根须抓住它们了，趁现在。", 2.4);
   }
 
@@ -351,7 +362,10 @@ export class RunScene extends Phaser.Scene {
     this.createZone(kind, model.sprite.x, model.sprite.y, ability.radius, ability.duration, {
       owner: model.slot,
       wizardId: model.wizard.id,
-      follow: model
+      follow: model,
+      blocksEnemies: ability.blocksEnemies,
+      healingPerTick: ability.healingPerTick,
+      healingInterval: ability.healingInterval
     });
   }
 
@@ -404,7 +418,11 @@ export class RunScene extends Phaser.Scene {
 
   castSupportUltimate(model, ability) {
     this.createZone("ultimate", 160, 101, 142, ability.duration, { owner: model.slot, wizardId: model.wizard.id });
-    for (const enemy of this.enemies.getChildren()) enemy.getData("model").ultimateSlow = ability.duration;
+    if (ability.hardFreeze) {
+      this.worldFreeze = Math.max(this.worldFreeze, ability.duration);
+    } else {
+      for (const enemy of this.enemies.getChildren()) enemy.getData("model").ultimateSlow = ability.duration;
+    }
     if (this.bossModel?.phase === 2) {
       this.bossModel.resonanceOpen = ability.duration;
       UI.say(model.wizard.name, "共鸣窗口已经打开，输出位现在释放终极技能！", 4);
@@ -465,6 +483,7 @@ export class RunScene extends Phaser.Scene {
 
   updateZones(dt) {
     for (const zone of this.zones) {
+      if (this.worldFreeze > 0 && zone.kind === "danger") continue;
       zone.age += dt;
       zone.duration -= dt;
       zone.tick -= dt;
@@ -478,6 +497,24 @@ export class RunScene extends Phaser.Scene {
         for (const player of this.playerModels) {
           if (!player.downed && distance(player.sprite, zone.shape) <= zone.radius) this.healPlayer(player, 2.4);
         }
+      }
+      if (zone.kind === "shield" && zone.healingPerTick && zone.tick <= 0) {
+        zone.tick = zone.healingInterval || 0.65;
+        for (const player of this.playerModels) {
+          if (!player.downed && distance(player.sprite, zone.shape) <= zone.radius) this.healPlayer(player, zone.healingPerTick);
+        }
+      }
+      if (zone.kind === "shield" && zone.blocksEnemies) {
+        for (const projectile of this.enemyProjectiles.getChildren()) {
+          if (!projectile.active || distance(projectile, zone.shape) > zone.radius + 3) continue;
+          this.burst(projectile.x, projectile.y, PALETTE.star);
+          projectile.destroy();
+        }
+      }
+      zone.setupTick = (zone.setupTick || 0) - dt;
+      if (zone.kind === "control" && zone.applies && zone.setupTick <= 0) {
+        zone.setupTick = 0.4;
+        this.applyZoneSetupStatus(zone, zone.radius + 8);
       }
       zone.specialTick = (zone.specialTick || 0) - dt;
       if (zone.kind === "control" && zone.specialTick <= 0) {
@@ -558,6 +595,41 @@ export class RunScene extends Phaser.Scene {
     return 1;
   }
 
+  controlPullAt(sprite, model) {
+    const pull = { x: 0, y: 0 };
+    for (const zone of this.zones) {
+      if (zone.kind !== "control" || !zone.pullStrength || !zone.pullRadius) continue;
+      const dx = zone.x - sprite.x;
+      const dy = zone.y - sprite.y;
+      const gap = Math.hypot(dx, dy);
+      if (gap <= 3 || gap > zone.pullRadius) continue;
+      const resistance = 1 / (1 + Math.max(0, model.config.threat - 1) * 0.3);
+      const strength = zone.pullStrength * resistance * (0.55 + (1 - gap / zone.pullRadius) * 0.45);
+      pull.x += (dx / gap) * strength;
+      pull.y += (dy / gap) * strength;
+    }
+    return pull;
+  }
+
+  enforceEnemyWardBarrier(sprite, model) {
+    for (const zone of this.zones) {
+      if (zone.kind !== "shield" || !zone.blocksEnemies) continue;
+      const resolved = resolveRadialBarrier({
+        x: sprite.x,
+        y: sprite.y,
+        velocityX: sprite.body.velocity.x,
+        velocityY: sprite.body.velocity.y
+      }, {
+        x: zone.x,
+        y: zone.y,
+        radius: zone.radius + model.config.radius + 1
+      });
+      if (!resolved.blocked) continue;
+      sprite.setPosition(resolved.x, resolved.y);
+      sprite.setVelocity(resolved.velocityX, resolved.velocityY);
+    }
+  }
+
   updateProjectiles(dt) {
     for (const projectile of this.projectiles.getChildren()) {
       if (!projectile.active) continue;
@@ -568,6 +640,15 @@ export class RunScene extends Phaser.Scene {
     for (const projectile of this.enemyProjectiles.getChildren()) {
       if (!projectile.active) continue;
       const model = projectile.getData("model");
+      if (this.worldFreeze > 0) {
+        model.frozenVelocity ||= { x: projectile.body.velocity.x, y: projectile.body.velocity.y };
+        projectile.setVelocity(0, 0);
+        continue;
+      }
+      if (model.frozenVelocity) {
+        projectile.setVelocity(model.frozenVelocity.x, model.frozenVelocity.y);
+        model.frozenVelocity = null;
+      }
       model.life -= dt;
       if (model.life <= 0 || projectile.x < ARENA.left || projectile.x > ARENA.right || projectile.y < ARENA.top || projectile.y > ARENA.bottom) projectile.destroy();
     }
@@ -706,6 +787,8 @@ export class RunScene extends Phaser.Scene {
     if (model.dead) return;
     model.dead = true;
     this.updateEnemyPresentation(sprite, true);
+    sprite.anims.resume();
+    sprite.setAlpha(1);
     sprite.setVelocity(0, 0);
     sprite.play(`${model.config.texture}-down`, true);
     this.burst(sprite.x, sprite.y, PALETTE.curse);
@@ -728,6 +811,17 @@ export class RunScene extends Phaser.Scene {
     if (!model || model.dead || !["starMark", "sprout"].includes(status)) return;
     model[status] = Math.max(model[status] || 0, duration);
     this.updateEnemyPresentation(sprite, true);
+  }
+
+  applyZoneSetupStatus(zone, range) {
+    for (const enemy of this.enemies.getChildren()) {
+      if (enemy.active && distance(enemy, zone.shape) <= range) {
+        this.applyEnemySetupStatus(enemy, zone.applies, zone.statusDuration || 4);
+      }
+    }
+    if (this.bossModel && distance(this.bossModel.sprite, zone.shape) <= range + 8) {
+      this.applyBossSetupStatus(zone.applies, zone.statusDuration || 4);
+    }
   }
 
   applyBossSetupStatus(status, duration) {
@@ -811,6 +905,7 @@ export class RunScene extends Phaser.Scene {
       starMark: 0,
       sprout: 0,
       ultimateSlow: 0,
+      wasFrozen: false,
       facing: { x: 0, y: 1 },
       dead: false,
       training: Boolean(options.training)
@@ -836,17 +931,31 @@ export class RunScene extends Phaser.Scene {
         this.updateEnemyPresentation(sprite);
         continue;
       }
-      model.attackTimer -= dt;
-      model.specialTimer -= dt;
       model.starMark = Math.max(0, model.starMark - dt);
       model.sprout = Math.max(0, model.sprout - dt);
       model.ultimateSlow = Math.max(0, model.ultimateSlow - dt);
       this.updateEnemyPresentation(sprite);
+      if (this.worldFreeze > 0) {
+        sprite.setVelocity(0, 0);
+        if (!model.wasFrozen) {
+          model.wasFrozen = true;
+          sprite.anims.pause();
+          sprite.setAlpha(0.72);
+        }
+        continue;
+      }
+      if (model.wasFrozen) {
+        model.wasFrozen = false;
+        sprite.anims.resume();
+        sprite.setAlpha(1);
+      }
+      model.attackTimer -= dt;
+      model.specialTimer -= dt;
       const target = this.chooseEnemyTarget(model.config.ai, sprite);
       if (!target) continue;
       const dx = target.sprite.x - sprite.x;
       const dy = target.sprite.y - sprite.y;
-      const gap = Math.hypot(dx, dy) || 1;
+      let gap = Math.hypot(dx, dy) || 1;
       const direction = normalize(dx, dy);
       model.facing = direction;
       sprite.setFlipX(direction.x < 0);
@@ -857,7 +966,10 @@ export class RunScene extends Phaser.Scene {
       } else {
         desired = gap > 12 ? 1 : 0;
       }
-      sprite.setVelocity(direction.x * speed * desired, direction.y * speed * desired);
+      const pull = this.controlPullAt(sprite, model);
+      sprite.setVelocity(direction.x * speed * desired + pull.x, direction.y * speed * desired + pull.y);
+      this.enforceEnemyWardBarrier(sprite, model);
+      gap = distance(target.sprite, sprite);
       if (desired) sprite.play(`${model.config.texture}-walk`, true);
       else sprite.play(`${model.config.texture}-idle`, true);
       sprite.x = clamp(sprite.x, ARENA.left + 7, ARENA.right - 7);
@@ -1122,6 +1234,7 @@ export class RunScene extends Phaser.Scene {
       riftEnergy: 0,
       starMark: 0,
       sprout: 0,
+      wasFrozen: false,
       float: 0
     };
     sprite.setData("model", this.bossModel);
@@ -1133,13 +1246,26 @@ export class RunScene extends Phaser.Scene {
   updateBoss(dt) {
     const boss = this.bossModel;
     if (!boss || this.mode !== "boss") return;
-    boss.attackTimer -= dt;
-    boss.summonTimer -= dt;
-    boss.shieldTimer -= dt;
     boss.resonanceOpen = Math.max(0, boss.resonanceOpen - dt);
     boss.starMark = Math.max(0, boss.starMark - dt);
     boss.sprout = Math.max(0, boss.sprout - dt);
     this.refreshBossTint();
+    if (this.worldFreeze > 0) {
+      if (!boss.wasFrozen) {
+        boss.wasFrozen = true;
+        boss.sprite.anims.pause();
+        boss.sprite.setAlpha(0.72);
+      }
+      return;
+    }
+    if (boss.wasFrozen) {
+      boss.wasFrozen = false;
+      boss.sprite.anims.resume();
+      boss.sprite.setAlpha(1);
+    }
+    boss.attackTimer -= dt;
+    boss.summonTimer -= dt;
+    boss.shieldTimer -= dt;
     boss.float += dt;
     boss.sprite.y = 58 + Math.sin(boss.float * 2) * 3;
 
@@ -1251,6 +1377,8 @@ export class RunScene extends Phaser.Scene {
     if (!boss || this.mode === "ended") return;
     this.mode = "ended";
     boss.hp = 0;
+    boss.sprite.anims.resume();
+    boss.sprite.setAlpha(1);
     boss.sprite.play(`${boss.config.texture}-down`, true);
     this.burst(boss.sprite.x, boss.sprite.y, PALETTE.bone, 18);
     this.shake(0.018, 650);

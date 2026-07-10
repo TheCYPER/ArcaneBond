@@ -1,9 +1,28 @@
 const abilities = {
   star: {
     shot: { name: "星光弹", cooldown: 0.34, kind: "projectile", damage: 12, effect: "star-shot", applies: "starMark" },
-    skill1: { name: "星环禁锢", cooldown: 5.2, kind: "controlZone", radius: 25, duration: 3.2 },
-    skill2: { name: "守护结界", cooldown: 8, kind: "shieldZone", radius: 29, duration: 5.2 },
-    ult: { name: "星穹封锁", cooldown: 14, kind: "supportUltimate", duration: 5 }
+    skill1: {
+      name: "星环禁锢",
+      cooldown: 5.2,
+      kind: "controlZone",
+      radius: 25,
+      duration: 3.2,
+      applies: "starMark",
+      statusDuration: 4.5,
+      pullRadius: 72,
+      pullStrength: 56
+    },
+    skill2: {
+      name: "守护结界",
+      cooldown: 8,
+      kind: "shieldZone",
+      radius: 29,
+      duration: 5.2,
+      blocksEnemies: true,
+      healingPerTick: 2.2,
+      healingInterval: 0.65
+    },
+    ult: { name: "星穹封锁", cooldown: 14, kind: "supportUltimate", duration: 3, hardFreeze: true }
   },
   ember: {
     shot: { name: "影焰箭", cooldown: 0.34, kind: "projectile", damage: 16, effect: "ember-shot", triggers: ["starMark", "sprout"] },

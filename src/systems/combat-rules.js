@@ -34,6 +34,25 @@ export function advanceReviveProgress(progress, dt, eligible) {
   return clamp01(progress + (eligible ? dt / 2 : -dt * 0.45));
 }
 
+export function resolveRadialBarrier(entity, barrier) {
+  const dx = entity.x - barrier.x;
+  const dy = entity.y - barrier.y;
+  const gap = Math.hypot(dx, dy);
+  if (gap > barrier.radius) return { ...entity, blocked: false };
+
+  const velocityLength = Math.hypot(entity.velocityX, entity.velocityY);
+  const normalX = gap > 0 ? dx / gap : velocityLength > 0 ? -entity.velocityX / velocityLength : 1;
+  const normalY = gap > 0 ? dy / gap : velocityLength > 0 ? -entity.velocityY / velocityLength : 0;
+  const inwardSpeed = entity.velocityX * normalX + entity.velocityY * normalY;
+  return {
+    x: barrier.x + normalX * barrier.radius,
+    y: barrier.y + normalY * barrier.radius,
+    velocityX: inwardSpeed < 0 ? entity.velocityX - normalX * inwardSpeed : entity.velocityX,
+    velocityY: inwardSpeed < 0 ? entity.velocityY - normalY * inwardSpeed : entity.velocityY,
+    blocked: true
+  };
+}
+
 export function shouldEnterBossPhaseTwo({ phase, hp, maxHp, phaseAt }) {
   return phase === 1 && hp <= maxHp * phaseAt;
 }
