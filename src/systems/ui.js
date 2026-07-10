@@ -108,13 +108,15 @@ export const UI = {
     refs.bossName.textContent = model.affix?.id && model.affix.id !== "none" ? `${boss.name} · ${model.affix.name}` : boss.name;
     refs.bossPhase.textContent = model.phase === 1 ? "I" : "II";
     refs.bossHp.style.width = `${Math.max(0, model.hp / model.maxHp) * 100}%`;
-    refs.bossHint.textContent = model.phase === 2
+    const combatHint = model.phase === 2
       ? model.resonanceOpen > 0
         ? "共鸣已开启，输出位释放终极技能"
         : `裂隙能量 ${Math.floor(model.riftEnergy)}% · 辅助位释放终极技能`
       : model.shield > 0
         ? "黑暗护盾存在，输出位使用破盾技能"
         : "观察预警，积攒双生共鸣";
+    const setupHint = model.starMark > 0 ? "星印已附着" : model.sprout > 0 ? "孢芽已附着" : "";
+    refs.bossHint.textContent = setupHint ? `${setupHint} · ${combatHint}` : combatHint;
   },
 
   say(speaker, text, seconds = 3.5) {

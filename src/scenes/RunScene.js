@@ -589,7 +589,7 @@ export class RunScene extends Phaser.Scene {
     }
     this.hitEnemy(enemy, shot.damage, { owner: shot.owner, projectile: true, wizardId: shot.wizardId });
     if (shot.furnace) this.createZone("wildfire", enemy.x, enemy.y, 11, 1.7, { owner: shot.owner });
-    if (shot.applies) target[shot.applies] = 6.5;
+    if (shot.applies) this.applyEnemySetupStatus(enemy, shot.applies, 6.5);
     if (shot.triggers?.includes(this.session.recipe.setup) && target[this.session.recipe.setup] > 0) this.triggerBond(enemy, target);
     this.handleCrossfire(enemy, target, shot.owner);
     if (shot.chains > 0 && shot.wizardId === "thunder") this.chainDamage(enemy, shot.damage * 0.55, shot.chains);
@@ -601,9 +601,10 @@ export class RunScene extends Phaser.Scene {
     if (!projectile.active || !this.bossModel) return;
     const shot = projectile.getData("model");
     this.hitBoss(shot.damage, { projectile: true, owner: shot.owner });
-    if (shot.applies) this.bossModel[shot.applies] = 5;
+    if (shot.applies) this.applyBossSetupStatus(shot.applies, 5);
     if (shot.triggers?.includes(this.session.recipe.setup) && this.bossModel[this.session.recipe.setup] > 0) {
       this.bossModel[this.session.recipe.setup] = 0;
+      this.refreshBossTint();
       this.hitBoss(24, { bond: true });
       this.session.stats.bonds += 1;
       audio.sfx(this, "bond");
@@ -625,6 +626,7 @@ export class RunScene extends Phaser.Scene {
 
   triggerBond(enemy, target) {
     target[this.session.recipe.setup] = 0;
+    this.updateEnemyPresentation(enemy, true);
     this.tutorial.bond = true;
     this.session.stats.bonds += 1;
     audio.sfx(this, "bond", 0.42);
@@ -636,7 +638,7 @@ export class RunScene extends Phaser.Scene {
       this.burstArea(enemy.x, enemy.y, 20, 28, { area: true, bond: true });
       if (this.session.hasBlessing("mark-spread")) {
         const nearby = this.nearestEnemies(enemy, 2, 58);
-        for (const other of nearby) other.getData("model").starMark = 5;
+        for (const other of nearby) this.applyEnemySetupStatus(other, "starMark", 5);
       }
     }
     if (result === "chain") {
@@ -689,9 +691,10 @@ export class RunScene extends Phaser.Scene {
       priestProtected: this.nearActivePriest(sprite)
     });
     model.hp -= damage;
+    this.updateEnemyPresentation(sprite, true);
     if (saveStore.data.settings.flashes) {
       sprite.setTintFill(0xffffff);
-      this.time.delayedCall(55, () => sprite.active && sprite.clearTint());
+      this.time.delayedCall(55, () => sprite.active && this.updateEnemyPresentation(sprite, true));
     }
     sprite.play(`${model.config.texture}-hurt`, true);
     audio.sfx(this, "hit", 0.16);
@@ -702,6 +705,7 @@ export class RunScene extends Phaser.Scene {
     const model = sprite.getData("model");
     if (model.dead) return;
     model.dead = true;
+    this.updateEnemyPresentation(sprite, true);
     sprite.setVelocity(0, 0);
     sprite.play(`${model.config.texture}-down`, true);
     this.burst(sprite.x, sprite.y, PALETTE.curse);
@@ -717,6 +721,77 @@ export class RunScene extends Phaser.Scene {
       const model = enemy.getData("model");
       return model?.config.id === "priest" && !model.dead && distance(enemy, sprite) <= 45;
     });
+  }
+
+  applyEnemySetupStatus(sprite, status, duration) {
+    const model = sprite?.getData("model");
+    if (!model || model.dead || !["starMark", "sprout"].includes(status)) return;
+    model[status] = Math.max(model[status] || 0, duration);
+    this.updateEnemyPresentation(sprite, true);
+  }
+
+  applyBossSetupStatus(status, duration) {
+    if (!this.bossModel || !["starMark", "sprout"].includes(status)) return;
+    this.bossModel[status] = Math.max(this.bossModel[status] || 0, duration);
+    this.refreshBossTint();
+  }
+
+  updateEnemyPresentation(sprite, force = false) {
+    const model = sprite?.getData("model");
+    if (!model?.healthBar || !model.statusGlyph) return;
+    model.healthBar.setPosition(sprite.x, sprite.y);
+    model.statusGlyph.setPosition(sprite.x, sprite.y);
+    const ratio = Math.max(0, Math.min(1, model.hp / model.maxHp));
+    const width = Math.ceil(ratio * 12);
+    const status = model.starMark > 0 ? "starMark" : model.sprout > 0 ? "sprout" : "none";
+    const signature = `${width}:${status}:${model.shield ? 1 : 0}:${model.dead ? 1 : 0}`;
+    if (!force && signature === model.presentationSignature) return;
+    model.presentationSignature = signature;
+    model.healthBar.clear();
+    model.statusGlyph.clear();
+    if (model.dead) {
+      model.healthBar.setVisible(false);
+      model.statusGlyph.setVisible(false);
+      return;
+    }
+    model.healthBar.setVisible(true);
+    model.healthBar.fillStyle(PALETTE.ink, 0.96);
+    model.healthBar.fillRect(-7, -14, 14, 3);
+    model.healthBar.fillStyle(0x4a3d50, 1);
+    model.healthBar.fillRect(-6, -13, 12, 1);
+    const barColor = status === "starMark" ? PALETTE.star : status === "sprout" ? PALETTE.verdant : model.shield ? PALETTE.curse : PALETTE.danger;
+    if (width > 0) {
+      model.healthBar.fillStyle(barColor, 1);
+      model.healthBar.fillRect(-6, -13, width, 1);
+    }
+    if (status === "starMark") {
+      model.statusGlyph.setVisible(true);
+      model.statusGlyph.fillStyle(PALETTE.star, 1);
+      model.statusGlyph.fillRect(-2, -19, 5, 1);
+      model.statusGlyph.fillRect(0, -21, 1, 5);
+    } else if (status === "sprout") {
+      model.statusGlyph.setVisible(true);
+      model.statusGlyph.fillStyle(PALETTE.verdant, 1);
+      model.statusGlyph.fillRect(0, -20, 1, 4);
+      model.statusGlyph.fillRect(-2, -20, 2, 1);
+      model.statusGlyph.fillRect(1, -19, 2, 1);
+    } else {
+      model.statusGlyph.setVisible(false);
+    }
+    sprite.clearTint();
+    if (status === "starMark") sprite.setTint(PALETTE.star);
+    if (status === "sprout") sprite.setTint(PALETTE.verdant);
+  }
+
+  refreshBossTint(force = false) {
+    const boss = this.bossModel;
+    if (!boss?.sprite?.active) return;
+    const status = boss.starMark > 0 ? "starMark" : boss.sprout > 0 ? "sprout" : "none";
+    if (!force && boss.presentationStatus === status) return;
+    boss.presentationStatus = status;
+    boss.sprite.clearTint();
+    if (status === "starMark") boss.sprite.setTint(PALETTE.star);
+    else if (status === "sprout") boss.sprite.setTint(PALETTE.verdant);
   }
 
   createEnemy(type, x, y, options = {}) {
@@ -740,8 +815,15 @@ export class RunScene extends Phaser.Scene {
       dead: false,
       training: Boolean(options.training)
     };
+    model.healthBar = this.add.graphics().setDepth(12);
+    model.statusGlyph = this.add.graphics().setDepth(13);
     sprite.setData("model", model);
     this.enemies.add(sprite);
+    sprite.once("destroy", () => {
+      model.healthBar?.destroy();
+      model.statusGlyph?.destroy();
+    });
+    this.updateEnemyPresentation(sprite, true);
     return sprite;
   }
 
@@ -749,12 +831,17 @@ export class RunScene extends Phaser.Scene {
     for (const sprite of this.enemies.getChildren()) {
       if (!sprite.active) continue;
       const model = sprite.getData("model");
-      if (!model || model.dead || model.training) continue;
+      if (!model || model.dead) continue;
+      if (model.training) {
+        this.updateEnemyPresentation(sprite);
+        continue;
+      }
       model.attackTimer -= dt;
       model.specialTimer -= dt;
       model.starMark = Math.max(0, model.starMark - dt);
       model.sprout = Math.max(0, model.sprout - dt);
       model.ultimateSlow = Math.max(0, model.ultimateSlow - dt);
+      this.updateEnemyPresentation(sprite);
       const target = this.chooseEnemyTarget(model.config.ai, sprite);
       if (!target) continue;
       const dx = target.sprite.x - sprite.x;
@@ -1052,6 +1139,7 @@ export class RunScene extends Phaser.Scene {
     boss.resonanceOpen = Math.max(0, boss.resonanceOpen - dt);
     boss.starMark = Math.max(0, boss.starMark - dt);
     boss.sprout = Math.max(0, boss.sprout - dt);
+    this.refreshBossTint();
     boss.float += dt;
     boss.sprite.y = 58 + Math.sin(boss.float * 2) * 3;
 
@@ -1153,7 +1241,7 @@ export class RunScene extends Phaser.Scene {
     boss.hp -= damage;
     if (saveStore.data.settings.flashes) {
       boss.sprite.setTintFill(0xffffff);
-      this.time.delayedCall(65, () => boss.sprite.active && boss.sprite.clearTint());
+      this.time.delayedCall(65, () => boss.sprite.active && this.refreshBossTint(true));
     }
     if (boss.hp <= 0) this.defeatBoss();
   }
