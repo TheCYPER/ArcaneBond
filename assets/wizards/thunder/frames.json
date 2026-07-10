@@ -1,0 +1,146 @@
+{
+  "wizard": "thunder",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "spacing": 1,
+  "frameCount": 17,
+  "sheetWidth": 288,
+  "frames": [
+    {
+      "index": 0,
+      "x": 0,
+      "tag": "move_up",
+      "direction": "up",
+      "action": "move",
+      "phase": 0
+    },
+    {
+      "index": 1,
+      "x": 17,
+      "tag": "move_up",
+      "direction": "up",
+      "action": "move",
+      "phase": 1
+    },
+    {
+      "index": 2,
+      "x": 34,
+      "tag": "move_down",
+      "direction": "down",
+      "action": "move",
+      "phase": 0
+    },
+    {
+      "index": 3,
+      "x": 51,
+      "tag": "move_down",
+      "direction": "down",
+      "action": "move",
+      "phase": 1
+    },
+    {
+      "index": 4,
+      "x": 68,
+      "tag": "move_left",
+      "direction": "left",
+      "action": "move",
+      "phase": 0
+    },
+    {
+      "index": 5,
+      "x": 85,
+      "tag": "move_left",
+      "direction": "left",
+      "action": "move",
+      "phase": 1
+    },
+    {
+      "index": 6,
+      "x": 102,
+      "tag": "move_right",
+      "direction": "right",
+      "action": "move",
+      "phase": 0
+    },
+    {
+      "index": 7,
+      "x": 119,
+      "tag": "move_right",
+      "direction": "right",
+      "action": "move",
+      "phase": 1
+    },
+    {
+      "index": 8,
+      "x": 136,
+      "tag": "cast_up",
+      "direction": "up",
+      "action": "cast",
+      "phase": 0
+    },
+    {
+      "index": 9,
+      "x": 153,
+      "tag": "cast_up",
+      "direction": "up",
+      "action": "cast",
+      "phase": 1
+    },
+    {
+      "index": 10,
+      "x": 170,
+      "tag": "cast_down",
+      "direction": "down",
+      "action": "cast",
+      "phase": 0
+    },
+    {
+      "index": 11,
+      "x": 187,
+      "tag": "cast_down",
+      "direction": "down",
+      "action": "cast",
+      "phase": 1
+    },
+    {
+      "index": 12,
+      "x": 204,
+      "tag": "cast_left",
+      "direction": "left",
+      "action": "cast",
+      "phase": 0
+    },
+    {
+      "index": 13,
+      "x": 221,
+      "tag": "cast_left",
+      "direction": "left",
+      "action": "cast",
+      "phase": 1
+    },
+    {
+      "index": 14,
+      "x": 238,
+      "tag": "cast_right",
+      "direction": "right",
+      "action": "cast",
+      "phase": 0
+    },
+    {
+      "index": 15,
+      "x": 255,
+      "tag": "cast_right",
+      "direction": "right",
+      "action": "cast",
+      "phase": 1
+    },
+    {
+      "index": 16,
+      "x": 272,
+      "tag": "downed",
+      "direction": null,
+      "action": "downed",
+      "phase": 0
+    }
+  ]
+}

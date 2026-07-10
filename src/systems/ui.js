@@ -71,8 +71,8 @@ export const UI = {
     refs.hud.hidden = false;
     refs.supportName.textContent = team.support.name;
     refs.damageName.textContent = team.damage.name;
-    refs.supportPortrait.style.backgroundImage = `url("assets/sprites/${team.support.texture}.png")`;
-    refs.damagePortrait.style.backgroundImage = `url("assets/sprites/${team.damage.texture}.png")`;
+    refs.supportPortrait.style.backgroundImage = `url("assets/wizards/${team.support.id}/portrait.png")`;
+    refs.damagePortrait.style.backgroundImage = `url("assets/wizards/${team.damage.id}/portrait.png")`;
     refs.supportAbilities.innerHTML = abilityChips(team.support, "support");
     refs.damageAbilities.innerHTML = abilityChips(team.damage, "damage");
     refs.seed.textContent = `SEED ${seed}`;
@@ -202,7 +202,7 @@ export const UI = {
       button.className = `wizard-card ${wizard.id === selectedId ? "selected" : ""} ${unlocked ? "" : "locked"}`;
       button.style.setProperty("--wizard-color", wizard.color);
       button.disabled = !unlocked;
-      button.innerHTML = `<span class="wizard-sprite" style="background-image:url('assets/sprites/${wizard.texture}.png')"></span><strong>${wizard.name}</strong><span>${unlocked ? wizard.role : wizard.id === "verdant" ? "首次封印后解锁" : "击败荆棘母树解锁"}</span>`;
+      button.innerHTML = `<span class="wizard-sprite" style="background-image:url('assets/wizards/${wizard.id}/portrait.png')"></span><strong>${wizard.name}</strong><span>${unlocked ? wizard.role : wizard.id === "verdant" ? "首次封印后解锁" : "击败荆棘母树解锁"}</span>`;
       button.addEventListener("click", () => onSelect(wizard.id));
       container.appendChild(button);
     }

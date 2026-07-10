@@ -16,6 +16,7 @@ import {
 import { applyWinUnlocks, RunSession } from "../systems/session.js";
 import { saveStore } from "../systems/save-store.js";
 import { UI } from "../systems/ui.js";
+import { cardinalDirection } from "../systems/direction.js";
 
 const ABILITY_KEYS = ["shot", "skill1", "skill2", "ult"];
 const EFFECT_COLORS = {
@@ -150,10 +151,10 @@ export class RunScene extends Phaser.Scene {
 
   createPlayer(slot, wizard, x, y) {
     const sprite = this.physics.add.sprite(x, y, wizard.texture, 0).setDepth(10);
-    sprite.body.setCircle(6, 2, 7);
+    sprite.body.setCircle(6, 2, 3);
     sprite.setTint(this.cosmetic.tint);
-    sprite.play(`${wizard.texture}-idle`);
     this.players.add(sprite);
+    const initialDirection = slot === "support" ? "right" : "left";
     const model = {
       slot,
       wizard,
@@ -163,6 +164,9 @@ export class RunScene extends Phaser.Scene {
       hp: wizard.hp,
       maxHp: wizard.hp,
       facing: slot === "support" ? { x: 1, y: 0 } : { x: -1, y: 0 },
+      direction: initialDirection,
+      castDirection: initialDirection,
+      castTimer: 0,
       cooldowns: { shot: 0, skill1: 0, skill2: 0, ult: 0 },
       downed: false,
       downedTimer: 0,
@@ -173,7 +177,15 @@ export class RunScene extends Phaser.Scene {
       hitFlash: 0
     };
     sprite.setData("model", model);
+    this.playPlayerAnimation(model, "idle");
     return model;
+  }
+
+  playPlayerAnimation(model, action, restart = false, direction = model.direction) {
+    const key = action === "down"
+      ? `${model.wizard.texture}-down`
+      : `${model.wizard.texture}-${action}-${direction}`;
+    if (restart || model.sprite.anims.currentAnim?.key !== key) model.sprite.play(key, !restart);
   }
 
   update(_time, deltaMs) {
@@ -209,7 +221,7 @@ export class RunScene extends Phaser.Scene {
       const map = this.keys[model.slot];
       model.sprite.setVelocity(0, 0);
       if (model.downed) {
-        model.sprite.play(`${model.wizard.texture}-down`, true);
+        this.playPlayerAnimation(model, "down");
         continue;
       }
       let x = 0;
@@ -218,16 +230,17 @@ export class RunScene extends Phaser.Scene {
       if (map.right.isDown) x += 1;
       if (map.up.isDown) y -= 1;
       if (map.down.isDown) y += 1;
-      if (x || y) {
+      const moving = Boolean(x || y);
+      if (moving) {
         const direction = normalize(x, y);
         const slow = model.cursed > 0 ? 0.67 : 1;
         model.sprite.setVelocity(direction.x * model.wizard.speed * slow, direction.y * model.wizard.speed * slow);
         model.facing = direction;
-        model.sprite.setFlipX(direction.x < 0);
-        model.sprite.play(`${model.wizard.texture}-walk`, true);
-      } else if (!model.sprite.anims.isPlaying || model.sprite.anims.currentAnim?.key.endsWith("walk")) {
-        model.sprite.play(`${model.wizard.texture}-idle`, true);
+        model.direction = cardinalDirection(direction, model.direction);
       }
+      if (model.castTimer > 0) this.playPlayerAnimation(model, "cast", false, model.castDirection);
+      else if (moving) this.playPlayerAnimation(model, "walk");
+      else this.playPlayerAnimation(model, "idle");
       model.x = model.sprite.x = clamp(model.sprite.x, ARENA.left + 7, ARENA.right - 7);
       model.y = model.sprite.y = clamp(model.sprite.y, ARENA.top + 9, ARENA.bottom - 7);
       if (!allowAbilities) continue;
@@ -257,6 +270,7 @@ export class RunScene extends Phaser.Scene {
   updateCooldownsAndStatuses(dt) {
     for (const model of this.playerModels) {
       for (const key of ABILITY_KEYS) model.cooldowns[key] = Math.max(0, model.cooldowns[key] - dt);
+      model.castTimer = Math.max(0, model.castTimer - dt);
       model.invuln = Math.max(0, model.invuln - dt);
       if (model.downed) model.downedTimer = Math.max(0, model.downedTimer - dt);
       if (model.cursed > 0 && !model.downed) {
@@ -273,7 +287,9 @@ export class RunScene extends Phaser.Scene {
     if (model.downed || model.cooldowns[abilityKey] > 0) return;
     const ability = model.wizard.abilities[abilityKey];
     model.cooldowns[abilityKey] = ability.cooldown * (abilityKey === "shot" ? this.variant.shotCooldown : 1);
-    model.sprite.play(`${model.wizard.texture}-cast`, true);
+    model.castDirection = model.direction;
+    model.castTimer = 0.2;
+    this.playPlayerAnimation(model, "cast", true, model.castDirection);
     if (abilityKey === "ult") this.afterimage(model.sprite, this.cosmetic.tint);
     audio.sfx(this, `${model.wizard.id}-cast`, 0.28);
     this.recordCast(model, abilityKey);
@@ -1060,7 +1076,7 @@ export class RunScene extends Phaser.Scene {
     player.downedTimer = 0;
     player.reviveProgress = 0;
     player.invuln = 1.5;
-    player.sprite.play(`${player.wizard.texture}-idle`, true);
+    this.playPlayerAnimation(player, "idle", true);
     this.session.stats.revives += 1;
     this.tutorial.revived = true;
     this.burst(player.sprite.x, player.sprite.y, PALETTE.verdant);
@@ -1092,7 +1108,7 @@ export class RunScene extends Phaser.Scene {
       player.downedTimer = 10;
       player.reviveProgress = 0;
       player.sprite.setVelocity(0, 0);
-      player.sprite.play(`${player.wizard.texture}-down`, true);
+      this.playPlayerAnimation(player, "down", true);
       if (!this.tutorialMode) UI.say(player.wizard.name, `我撑不住了，用 ${player.slot === "support" ? "P" : "E"} 唤醒我！`, 4);
     }
   }

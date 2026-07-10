@@ -35,7 +35,7 @@ python3 tools/serve.py
 - 24 个规则型祝福，不包含永久伤害或生命成长。
 - 法术笔法、Boss 词缀、三档难度与法袍外观组成的横向解锁。
 - 本地版本化存档、秘法图鉴、设置和损坏存档回退。
-- 15 套角色精灵、8 套特效、原创图块、2 首音乐和 12 个音效。
+- 四位巫师各 17 帧方向精灵、11 套敌人与 Boss 精灵、8 套特效、原创图块、2 首音乐和 12 个音效。
 - 停帧、残影、闪白、震屏、预警与 Boss 阶段转场。
 
 ## 技术结构
@@ -43,8 +43,13 @@ python3 tools/serve.py
 - `src/scenes/`：Phaser 启动、菜单、故事、选角、教程、冒险、奖励、图鉴和结算场景。
 - `src/content/`：巫师、祝福、敌人、Boss 与遭遇注册表。
 - `src/systems/`：种子随机数、战斗规则、存档、音频、UI 与单局状态。
-- `assets/`：完全本地的 PNG 和 WAV 资产。
+- `assets/wizards/`：四位巫师各自独立的精灵表、头像、帧元数据和旧版参考图。
+- `assets/sprites/`：小怪与 Boss 精灵，不再混放玩家巫师。
+- `assets/audio/`、`assets/effects/`、`assets/tiles/`：完全本地的声音、法术与地图资产。
 - `tools/generate_assets.py`：确定性生成原创 8 位资产。
+- `tools/generate-wizard-placeholders.mjs`：生成四位巫师的 17 帧占位精灵表。
+
+巫师帧顺序、Aseprite 网格与导出约定见 [`assets/wizards/README.md`](assets/wizards/README.md)。手绘开始后不要运行 `npm run assets:wizards`，该命令会重新生成并覆盖占位图。
 
 运行测试：
 
