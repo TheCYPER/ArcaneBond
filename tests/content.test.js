@@ -27,6 +27,17 @@ test("every wizard pair resolves to a distinct bond recipe", () => {
   assert.equal(new Set(ids).size, 4);
 });
 
+test("Star utility abilities expose concrete control, sanctuary, and freeze rules", () => {
+  const { skill1, skill2, ult } = WIZARDS.star.abilities;
+  assert.equal(skill1.applies, "starMark");
+  assert.ok(skill1.pullRadius > skill1.radius);
+  assert.ok(skill1.pullStrength > 0);
+  assert.equal(skill2.blocksEnemies, true);
+  assert.ok(skill2.healingPerTick > 0);
+  assert.equal(ult.duration, 3);
+  assert.equal(ult.hardFreeze, true);
+});
+
 test("blessing drafts contain universal and pair-specific rules only", () => {
   const pool = eligibleBlessings("stormgarden", ["crossfire"]);
   assert.ok(pool.length > 3);

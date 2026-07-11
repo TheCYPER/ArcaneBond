@@ -1,5 +1,6 @@
 import { UI } from "../systems/ui.js";
 import { preloadAudio } from "../systems/audio.js";
+import { WIZARD_DIRECTIONS, WIZARD_DOWN_FRAME, WIZARD_FRAME_LAYOUT, WIZARD_SHEET } from "../content/wizard-animations.js";
 
 const wizardSheets = ["star", "ember", "verdant", "thunder"];
 const enemySheets = ["imp", "wolf", "guard", "ghost", "archer", "priest", "mirror", "spore"];
@@ -15,7 +16,7 @@ export class BootScene extends Phaser.Scene {
     this.load.on("progress", (value) => UI.setLoading(value));
     this.load.on("loaderror", (file) => UI.setLoading(0, `资源读取失败：${file.key}`));
     for (const key of wizardSheets) {
-      this.load.spritesheet(key, `assets/sprites/${key}.png`, { frameWidth: 16, frameHeight: 20 });
+      this.load.spritesheet(key, `assets/wizards/${key}/sheet.png`, WIZARD_SHEET);
     }
     for (const key of enemySheets) {
       this.load.spritesheet(key, `assets/sprites/${key}.png`, { frameWidth: 20, frameHeight: 20 });
@@ -37,7 +38,36 @@ export class BootScene extends Phaser.Scene {
   }
 
   createAnimations() {
-    for (const key of [...wizardSheets, ...enemySheets, ...bossSheets]) {
+    for (const key of wizardSheets) {
+      for (const direction of WIZARD_DIRECTIONS) {
+        const frames = WIZARD_FRAME_LAYOUT[direction];
+        this.anims.create({
+          key: `${key}-idle-${direction}`,
+          frames: this.anims.generateFrameNumbers(key, { frames: [frames.idle] }),
+          frameRate: 1,
+          repeat: -1
+        });
+        this.anims.create({
+          key: `${key}-walk-${direction}`,
+          frames: this.anims.generateFrameNumbers(key, { frames: frames.walk }),
+          frameRate: 6,
+          repeat: -1
+        });
+        this.anims.create({
+          key: `${key}-cast-${direction}`,
+          frames: this.anims.generateFrameNumbers(key, { frames: frames.cast }),
+          frameRate: 10,
+          repeat: 0
+        });
+      }
+      this.anims.create({
+        key: `${key}-down`,
+        frames: this.anims.generateFrameNumbers(key, { frames: [WIZARD_DOWN_FRAME] }),
+        frameRate: 1,
+        repeat: 0
+      });
+    }
+    for (const key of [...enemySheets, ...bossSheets]) {
       const prefix = `${key}-`;
       this.anims.create({ key: `${prefix}idle`, frames: this.anims.generateFrameNumbers(key, { frames: [0, 1] }), frameRate: 3, repeat: -1 });
       this.anims.create({ key: `${prefix}walk`, frames: this.anims.generateFrameNumbers(key, { frames: [1, 2, 3, 2] }), frameRate: 8, repeat: -1 });

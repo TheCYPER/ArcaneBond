@@ -114,9 +114,9 @@ input:focus-visible {
   flex: 0 0 36px;
   width: 36px;
   height: 44px;
-  background-position: 0 0;
+  background-position: center;
   background-repeat: no-repeat;
-  background-size: 216px 45px;
+  background-size: 36px 36px;
   image-rendering: pixelated;
 }
 
@@ -586,9 +586,9 @@ h2 {
   width: 48px;
   height: 60px;
   margin: 0 auto 5px;
-  background-position: 0 0;
+  background-position: center;
   background-repeat: no-repeat;
-  background-size: 288px 60px;
+  background-size: 48px 48px;
   image-rendering: pixelated;
 }
 

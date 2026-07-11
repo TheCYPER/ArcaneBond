@@ -7,6 +7,7 @@ import {
   calculateBossDamage,
   calculateEnemyDamage,
   calculatePlayerDamage,
+  resolveRadialBarrier,
   shouldEnterBossPhaseTwo
 } from "../src/systems/combat-rules.js";
 
@@ -38,6 +39,20 @@ test("rescue requires two seconds of continuous eligibility and decays when rele
   assert.ok(progress > 0.999999);
   assert.equal(advanceReviveProgress(0.5, 1, false), 0.04999999999999999);
   assert.equal(advanceReviveProgress(0.1, 1, false), 0);
+});
+
+test("guardian barriers push intruders out and remove inward velocity", () => {
+  const blocked = resolveRadialBarrier(
+    { x: 5, y: 0, velocityX: -4, velocityY: 3 },
+    { x: 0, y: 0, radius: 10 }
+  );
+  assert.deepEqual(blocked, { x: 10, y: 0, velocityX: 0, velocityY: 3, blocked: true });
+
+  const outside = resolveRadialBarrier(
+    { x: 12, y: 0, velocityX: -4, velocityY: 0 },
+    { x: 0, y: 0, radius: 10 }
+  );
+  assert.deepEqual(outside, { x: 12, y: 0, velocityX: -4, velocityY: 0, blocked: false });
 });
 
 test("Boss phase two resists ordinary damage and accepts a resonance finisher", () => {
