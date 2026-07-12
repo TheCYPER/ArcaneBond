@@ -27,6 +27,8 @@ python3 tools/serve.py
 
 首次游玩会进入四步双生试炼。星辉与影焰默认开放；首次通关解锁森语巫师，击败荆棘母树解锁雷鸣巫师。
 
+主菜单的“训练房”不读取或推进解锁进度。训练中只使用移动与普通攻击，可选择一击换位的稻草人或持续变向的移动箭靶；漏弹会清空连击，每三次连续命中会播放鼓励音效。
+
 ## 当前内容
 
 - 4 位巫师与 4 种搭档共鸣语法。
@@ -35,19 +37,22 @@ python3 tools/serve.py
 - 24 个规则型祝福，不包含永久伤害或生命成长。
 - 法术笔法、Boss 词缀、三档难度与法袍外观组成的横向解锁。
 - 本地版本化存档、秘法图鉴、设置和损坏存档回退。
-- 四位巫师各 17 帧方向精灵、11 套敌人与 Boss 精灵、8 套特效、原创图块、2 首音乐和 12 个音效。
+- 独立双人训练房，包含随机生成与随机移动两种标靶模式。
+- 四位巫师各 17 帧方向精灵、11 套敌人与 Boss 精灵、8 套特效、原创图块、2 首音乐和 13 个音效。
 - 停帧、残影、闪白、震屏、预警与 Boss 阶段转场。
 
 ## 技术结构
 
-- `src/scenes/`：Phaser 启动、菜单、故事、选角、教程、冒险、奖励、图鉴和结算场景。
+- `src/scenes/`：Phaser 启动、菜单、训练、故事、选角、教程、冒险、奖励、图鉴和结算场景。
 - `src/content/`：巫师、祝福、敌人、Boss 与遭遇注册表。
 - `src/systems/`：种子随机数、战斗规则、存档、音频、UI 与单局状态。
 - `assets/wizards/`：四位巫师各自独立的精灵表、头像、帧元数据和旧版参考图。
 - `assets/sprites/`：小怪与 Boss 精灵，不再混放玩家巫师。
+- `assets/training/`：两套 24 × 24 双帧训练标靶与绘制说明。
 - `assets/audio/`、`assets/effects/`、`assets/tiles/`：完全本地的声音、法术与地图资产。
 - `tools/generate_assets.py`：确定性生成原创 8 位资产。
 - `tools/generate-wizard-placeholders.mjs`：生成四位巫师的 17 帧占位精灵表。
+- `tools/generate-training-assets.mjs`：生成训练标靶与三连命中音效。
 
 巫师帧顺序、Aseprite 网格与导出约定见 [`assets/wizards/README.md`](assets/wizards/README.md)。手绘开始后不要运行 `npm run assets:wizards`，该命令会重新生成并覆盖占位图。
 

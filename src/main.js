@@ -7,6 +7,8 @@ import { ResultScene } from "./scenes/ResultScene.js";
 import { RewardScene } from "./scenes/RewardScene.js";
 import { RunScene } from "./scenes/RunScene.js";
 import { StoryScene } from "./scenes/StoryScene.js";
+import { TrainingScene } from "./scenes/TrainingScene.js";
+import { TrainingSelectScene } from "./scenes/TrainingSelectScene.js";
 import { TutorialScene } from "./scenes/TutorialScene.js";
 import { audio } from "./systems/audio.js";
 import { saveStore } from "./systems/save-store.js";
@@ -55,6 +57,8 @@ const game = new Phaser.Game({
   scene: [
     BootScene,
     MenuScene,
+    TrainingSelectScene,
+    TrainingScene,
     StoryScene,
     CharacterSelectScene,
     TutorialScene,
@@ -83,6 +87,19 @@ if (new URLSearchParams(window.location.search).has("qa")) {
     startRun(supportId = "star", damageId = "ember", seed = "QA-BOND", options = {}) {
       const active = game.scene.getScenes(true)[0];
       active.scene.start("RunScene", { supportId, damageId, seed, ...saveStore.data.loadout, ...options });
+    },
+    startTraining(mode = "spawn", seed = "QA-TRAINING") {
+      const active = game.scene.getScenes(true)[0];
+      active.scene.start("TrainingScene", { mode, seed });
+    },
+    trainingHit() {
+      return game.scene.getScene("TrainingScene").qaHitTarget();
+    },
+    trainingMiss() {
+      return game.scene.getScene("TrainingScene").qaMiss();
+    },
+    trainingSnapshot() {
+      return game.scene.getScene("TrainingScene").qaSnapshot();
     },
     clearRoom() {
       const run = game.scene.getScene("RunScene");
