@@ -14,6 +14,16 @@ python3 tools/serve.py
 
 游戏运行时不访问互联网。由于浏览器会限制 `file://` 下的图片和声音，请不要直接双击 `index.html`。
 
+## 在线游玩与部署
+
+线上版本使用 GitHub Pages，不需要运行 Python 后端。`tools/serve.py` 只负责本机开发时提供静态文件；游戏状态仍保存在每台电脑自己的浏览器中。
+
+合并到 `main` 后，[部署工作流](.github/workflows/deploy-pages.yml)会先运行完整检查，再把 `index.html`、`assets/`、`src/` 和 `vendor/` 发布到：
+
+<https://thecyper.github.io/ArcaneBond/>
+
+首次启用方式、自动发布过程和学校网络无法访问 GitHub Pages 时的 Cloudflare Pages 备用方案见 [`docs/deployment.md`](docs/deployment.md)。
+
 ## 操作
 
 | 功能 | 玩家 A · 辅助位 | 玩家 B · 输出位 |
@@ -47,14 +57,15 @@ python3 tools/serve.py
 - `src/content/`：巫师、祝福、敌人、Boss 与遭遇注册表。
 - `src/systems/`：种子随机数、战斗规则、存档、音频、UI 与单局状态。
 - `assets/wizards/`：四位巫师各自独立的精灵表、头像、帧元数据和旧版参考图。
-- `assets/sprites/`：小怪与 Boss 精灵，不再混放玩家巫师。
+- `assets/sprites/`：小怪与 Boss 精灵；八套小怪图包含帧间辅助线，不再混放玩家巫师。
 - `assets/training/`：两套 24 × 24 双帧训练标靶与绘制说明。
 - `assets/audio/`、`assets/effects/`、`assets/tiles/`：完全本地的声音、法术与地图资产。
 - `tools/generate_assets.py`：确定性生成原创 8 位资产。
+- `tools/add-enemy-frame-guides.mjs`：为小怪帧插入或修复 1 像素黑色辅助线，不改变帧内画面。
 - `tools/generate-wizard-placeholders.mjs`：生成四位巫师的 17 帧占位精灵表。
 - `tools/generate-training-assets.mjs`：生成训练标靶与三连命中音效。
 
-巫师帧顺序、Aseprite 网格与导出约定见 [`assets/wizards/README.md`](assets/wizards/README.md)。手绘开始后不要运行 `npm run assets:wizards`，该命令会重新生成并覆盖占位图。
+巫师帧顺序、Aseprite 网格与导出约定见 [`assets/wizards/README.md`](assets/wizards/README.md)；小怪帧边界与用途见 [`assets/sprites/README.md`](assets/sprites/README.md)。手绘开始后不要运行 `npm run assets:wizards`，该命令会重新生成并覆盖占位图。
 
 运行测试：
 
