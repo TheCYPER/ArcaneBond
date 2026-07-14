@@ -1,9 +1,10 @@
 import { UI } from "../systems/ui.js";
 import { preloadAudio } from "../systems/audio.js";
+import { ENEMY_FRAME_LAYOUT, ENEMY_SHEET, ENEMY_SPRITE_IDS } from "../content/enemy-animations.js";
 import { WIZARD_DIRECTIONS, WIZARD_DOWN_FRAME, WIZARD_FRAME_LAYOUT, WIZARD_SHEET } from "../content/wizard-animations.js";
 
 const wizardSheets = ["star", "ember", "verdant", "thunder"];
-const enemySheets = ["imp", "wolf", "guard", "ghost", "archer", "priest", "mirror", "spore"];
+const enemySheets = ENEMY_SPRITE_IDS;
 const bossSheets = ["lich", "thorn", "mirrorboss"];
 const effectSheets = ["star-shot", "ember-shot", "seed-shot", "thunder-shot", "burst", "curse", "shield", "warning"];
 const trainingSheets = ["training-straw", "training-target"];
@@ -20,7 +21,7 @@ export class BootScene extends Phaser.Scene {
       this.load.spritesheet(key, `assets/wizards/${key}/sheet.png`, WIZARD_SHEET);
     }
     for (const key of enemySheets) {
-      this.load.spritesheet(key, `assets/sprites/${key}.png`, { frameWidth: 20, frameHeight: 20 });
+      this.load.spritesheet(key, `assets/sprites/${key}.png`, ENEMY_SHEET);
     }
     for (const key of bossSheets) {
       this.load.spritesheet(key, `assets/sprites/${key}.png`, { frameWidth: 34, frameHeight: 34 });
@@ -72,11 +73,11 @@ export class BootScene extends Phaser.Scene {
     }
     for (const key of [...enemySheets, ...bossSheets]) {
       const prefix = `${key}-`;
-      this.anims.create({ key: `${prefix}idle`, frames: this.anims.generateFrameNumbers(key, { frames: [0, 1] }), frameRate: 3, repeat: -1 });
-      this.anims.create({ key: `${prefix}walk`, frames: this.anims.generateFrameNumbers(key, { frames: [1, 2, 3, 2] }), frameRate: 8, repeat: -1 });
-      this.anims.create({ key: `${prefix}cast`, frames: this.anims.generateFrameNumbers(key, { frames: [4, 0] }), frameRate: 10, repeat: 0 });
-      this.anims.create({ key: `${prefix}hurt`, frames: this.anims.generateFrameNumbers(key, { frames: [4, 0] }), frameRate: 12, repeat: 0 });
-      this.anims.create({ key: `${prefix}down`, frames: this.anims.generateFrameNumbers(key, { frames: [5] }), frameRate: 1, repeat: 0 });
+      this.anims.create({ key: `${prefix}idle`, frames: this.anims.generateFrameNumbers(key, { frames: ENEMY_FRAME_LAYOUT.idle }), frameRate: 3, repeat: -1 });
+      this.anims.create({ key: `${prefix}walk`, frames: this.anims.generateFrameNumbers(key, { frames: ENEMY_FRAME_LAYOUT.walk }), frameRate: 8, repeat: -1 });
+      this.anims.create({ key: `${prefix}cast`, frames: this.anims.generateFrameNumbers(key, { frames: ENEMY_FRAME_LAYOUT.cast }), frameRate: 10, repeat: 0 });
+      this.anims.create({ key: `${prefix}hurt`, frames: this.anims.generateFrameNumbers(key, { frames: ENEMY_FRAME_LAYOUT.hurt }), frameRate: 12, repeat: 0 });
+      this.anims.create({ key: `${prefix}down`, frames: this.anims.generateFrameNumbers(key, { frames: ENEMY_FRAME_LAYOUT.down }), frameRate: 1, repeat: 0 });
     }
     for (const key of effectSheets) {
       this.anims.create({ key: `${key}-pulse`, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 5 }), frameRate: 14, repeat: -1 });
