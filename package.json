@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "assets:enemy-guides": "node tools/add-enemy-frame-guides.mjs",
     "assets:training": "node tools/generate-training-assets.mjs",
     "assets:wizards": "node tools/generate-wizard-placeholders.mjs",
     "test": "node --test tests/*.test.js",

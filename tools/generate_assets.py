@@ -191,10 +191,20 @@ def make_sheets():
             wizard_frame(draw, frame * 16, key, frame)
         image.save(ROOT / f"assets/sprites/{key}.png")
     for key in ("imp", "wolf", "guard", "ghost", "archer", "priest", "mirror", "spore"):
-        image = Image.new("RGBA", (20 * 6, 20), (0, 0, 0, 0))
+        frame_width = 20
+        frame_count = 6
+        spacing = 1
+        image = Image.new(
+            "RGBA",
+            (frame_width * frame_count + spacing * (frame_count - 1), 20),
+            (0, 0, 0, 0),
+        )
         draw = ImageDraw.Draw(image)
-        for frame in range(6):
-            enemy_frame(draw, frame * 20, key, frame)
+        for frame in range(frame_count):
+            ox = frame * (frame_width + spacing)
+            enemy_frame(draw, ox, key, frame)
+            if frame < frame_count - 1:
+                px(draw, ox + frame_width, 0, spacing, 20, "#000000")
         image.save(ROOT / f"assets/sprites/{key}.png")
     for key in ("lich", "thorn", "mirrorboss"):
         image = Image.new("RGBA", (34 * 6, 34), (0, 0, 0, 0))

@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { inflateSync } from "node:zlib";
 
 import {
   WIZARD_DIRECTIONS,
@@ -11,35 +10,9 @@ import {
   WIZARD_SHEET
 } from "../src/content/wizard-animations.js";
 import { cardinalDirection } from "../src/systems/direction.js";
+import { decodeRgbaPng, rgbaAt } from "./png-test-helpers.js";
 
 const WIZARDS = ["star", "ember", "verdant", "thunder"];
-
-function decodeGeneratedPng(buffer) {
-  assert.deepEqual([...buffer.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
-  const idat = [];
-  let width = 0;
-  let height = 0;
-  let offset = 8;
-  while (offset < buffer.length) {
-    const length = buffer.readUInt32BE(offset);
-    const type = buffer.toString("ascii", offset + 4, offset + 8);
-    const data = buffer.subarray(offset + 8, offset + 8 + length);
-    if (type === "IHDR") {
-      width = data.readUInt32BE(0);
-      height = data.readUInt32BE(4);
-    }
-    if (type === "IDAT") idat.push(data);
-    offset += length + 12;
-  }
-  return { width, height, scanlines: inflateSync(Buffer.concat(idat)) };
-}
-
-function rgbaAt(png, x, y) {
-  const rowWidth = png.width * 4 + 1;
-  assert.equal(png.scanlines[y * rowWidth], 0, "placeholder generator must use PNG filter 0");
-  const offset = y * rowWidth + 1 + x * 4;
-  return [...png.scanlines.subarray(offset, offset + 4)];
-}
 
 test("cardinal animation direction follows the dominant movement axis", () => {
   assert.equal(cardinalDirection({ x: 0, y: -1 }), "up");
@@ -75,8 +48,8 @@ test("wizard packages contain exact sheets, portraits, metadata, and black separ
       readFile(new URL("frames.json", root), "utf8").then(JSON.parse),
       readFile(new URL("legacy.png", root))
     ]);
-    const sheet = decodeGeneratedPng(sheetBuffer);
-    const portrait = decodeGeneratedPng(portraitBuffer);
+    const sheet = decodeRgbaPng(sheetBuffer);
+    const portrait = decodeRgbaPng(portraitBuffer);
     assert.equal(sheet.width, 288);
     assert.equal(sheet.height, 16);
     assert.equal(portrait.width, 16);
