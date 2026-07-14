@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "assets:training": "node tools/generate-training-assets.mjs",
     "assets:wizards": "node tools/generate-wizard-placeholders.mjs",
     "test": "node --test tests/*.test.js",
     "check": "node --check src/main.js && node --test tests/*.test.js",

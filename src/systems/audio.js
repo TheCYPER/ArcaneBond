@@ -12,6 +12,7 @@ const SFX_KEYS = [
   "shield-break",
   "revive",
   "boss-warning",
+  "training-cheer",
   "victory"
 ];
 

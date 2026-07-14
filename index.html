@@ -58,6 +58,9 @@
           <div id="rewardChoices" class="reward-choices"></div>
           <div class="reward-foot">两人靠近同一座祭坛，同时按住 E 与 P</div>
         </div>
+
+        <button id="trainingExitButton" class="training-exit-button" type="button" hidden>退出训练</button>
+        <div id="trainingCheer" class="training-cheer" hidden>三连命中！</div>
       </section>
 
       <section id="menuScreen" class="screen menu-screen">
@@ -69,6 +72,7 @@
           <p class="menu-story">同一套键盘，两种魔法语法。一起走进每次都会变化的裂隙。</p>
           <div class="primary-actions">
             <button id="startButton" class="command-button primary" type="button">开始裂隙冒险</button>
+            <button id="trainingButton" class="command-button" type="button">训练房</button>
             <button id="tutorialButton" class="command-button" type="button">双生试炼</button>
           </div>
           <div class="secondary-actions">
@@ -77,6 +81,33 @@
           </div>
         </div>
         <div id="continueMeta" class="continue-meta">尚未留下裂隙记录</div>
+      </section>
+
+      <section id="trainingSelectScreen" class="screen training-select-screen" hidden>
+        <header class="screen-header">
+          <p class="eyebrow">THE PRACTICE HALL</p>
+          <h2>训练房</h2>
+          <p>星辉与影焰可以在这里练习移动、瞄准与连续命中。</p>
+        </header>
+        <div class="training-mode-grid">
+          <button id="trainingSpawnButton" class="training-mode-button" type="button">
+            <span class="training-target-preview training-straw-preview" aria-hidden="true"></span>
+            <span class="training-mode-copy">
+              <strong>随机生成</strong>
+              <span>一击击倒稻草人，它会立刻出现在房间的新位置。</span>
+            </span>
+          </button>
+          <button id="trainingMoveButton" class="training-mode-button" type="button">
+            <span class="training-target-preview training-bullseye-preview" aria-hidden="true"></span>
+            <span class="training-mode-copy">
+              <strong>随机移动</strong>
+              <span>追踪持续变向的箭靶，练习预判与移动射击。</span>
+            </span>
+          </button>
+        </div>
+        <div class="screen-footer training-select-footer">
+          <button id="trainingBackButton" class="text-button" type="button">返回图书馆</button>
+        </div>
       </section>
 
       <section id="storyScreen" class="screen story-screen" hidden>

@@ -10,6 +10,7 @@ const refs = {
   stage: byId("stage"),
   hud: byId("hud"),
   menu: byId("menuScreen"),
+  trainingSelect: byId("trainingSelectScreen"),
   story: byId("storyScreen"),
   select: byId("selectScreen"),
   archive: byId("archiveScreen"),
@@ -42,10 +43,12 @@ const refs = {
   tutorialText: byId("tutorialText"),
   reward: byId("rewardPanel"),
   rewardChoices: byId("rewardChoices"),
+  trainingExit: byId("trainingExitButton"),
+  trainingCheer: byId("trainingCheer"),
   continueMeta: byId("continueMeta")
 };
 
-const screenRefs = [refs.menu, refs.story, refs.select, refs.archive, refs.result];
+const screenRefs = [refs.menu, refs.trainingSelect, refs.story, refs.select, refs.archive, refs.result];
 
 function abilityChips(wizard, slot) {
   const keys = slot === "support" ? ["F", "G", "H", "T"] : ["J", "K", "L", "O"];
@@ -60,6 +63,7 @@ export const UI = {
   showScreen(id) {
     for (const screen of screenRefs) screen.hidden = screen.id !== id;
     refs.hud.hidden = true;
+    this.hideTrainingFeedback();
   },
 
   hideScreens() {
@@ -68,6 +72,7 @@ export const UI = {
 
   showHud(team, seed) {
     this.hideScreens();
+    this.hideTrainingFeedback();
     refs.hud.hidden = false;
     refs.supportName.textContent = team.support.name;
     refs.damageName.textContent = team.damage.name;
@@ -76,6 +81,41 @@ export const UI = {
     refs.supportAbilities.innerHTML = abilityChips(team.support, "support");
     refs.damageAbilities.innerHTML = abilityChips(team.damage, "damage");
     refs.seed.textContent = `SEED ${seed}`;
+  },
+
+  showTrainingHud(team, mode) {
+    this.showHud(team, "PRACTICE");
+    refs.hud.classList.add("training-hud-active");
+    refs.trainingExit.hidden = false;
+    refs.supportAbilities.innerHTML = `<span class="ability-chip" title="普通射击">F ${team.support.abilities.shot.name}</span>`;
+    refs.damageAbilities.innerHTML = `<span class="ability-chip" title="普通射击">J ${team.damage.abilities.shot.name}</span>`;
+    refs.supportHp.style.width = "100%";
+    refs.damageHp.style.width = "100%";
+    refs.roomLabel.textContent = `训练房 · ${mode.name}`;
+    refs.seed.textContent = `${mode.objective} · 连中 3 次触发鼓励`;
+  },
+
+  updateTraining(stats) {
+    refs.objective.textContent = `命中 ${stats.hits} · 连中 ${stats.streak} · 最佳 ${stats.bestStreak}`;
+  },
+
+  showTrainingCheer(streak) {
+    refs.trainingCheer.textContent = streak === 3 ? "三连命中！" : `${streak} 连命中！`;
+    refs.trainingCheer.hidden = false;
+    refs.trainingCheer.style.animation = "none";
+    void refs.trainingCheer.offsetWidth;
+    refs.trainingCheer.style.animation = "";
+    clearTimeout(this.trainingCheerTimer);
+    this.trainingCheerTimer = setTimeout(() => {
+      refs.trainingCheer.hidden = true;
+    }, 720);
+  },
+
+  hideTrainingFeedback() {
+    refs.hud.classList.remove("training-hud-active");
+    refs.trainingExit.hidden = true;
+    refs.trainingCheer.hidden = true;
+    clearTimeout(this.trainingCheerTimer);
   },
 
   setLoading(progress, text = "正在翻开魔典…") {

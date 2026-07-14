@@ -19,6 +19,10 @@ export class MenuScene extends Phaser.Scene {
       audio.sfx(this, "ui-select");
       this.scene.start("StoryScene", { forceTutorial: false });
     };
+    byId("trainingButton").onclick = () => {
+      audio.sfx(this, "ui-select");
+      this.scene.start("TrainingSelectScene");
+    };
     byId("tutorialButton").onclick = () => {
       audio.sfx(this, "ui-select");
       this.scene.start("CharacterSelectScene", { forceTutorial: true });

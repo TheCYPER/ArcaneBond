@@ -6,6 +6,7 @@ const wizardSheets = ["star", "ember", "verdant", "thunder"];
 const enemySheets = ["imp", "wolf", "guard", "ghost", "archer", "priest", "mirror", "spore"];
 const bossSheets = ["lich", "thorn", "mirrorboss"];
 const effectSheets = ["star-shot", "ember-shot", "seed-shot", "thunder-shot", "burst", "curse", "shield", "warning"];
+const trainingSheets = ["training-straw", "training-target"];
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -27,6 +28,8 @@ export class BootScene extends Phaser.Scene {
     for (const key of effectSheets) {
       this.load.spritesheet(key, `assets/effects/${key}.png`, { frameWidth: 12, frameHeight: 12 });
     }
+    this.load.spritesheet("training-straw", "assets/training/straw-dummy.png", { frameWidth: 24, frameHeight: 24 });
+    this.load.spritesheet("training-target", "assets/training/moving-target.png", { frameWidth: 24, frameHeight: 24 });
     this.load.spritesheet("library-tiles", "assets/tiles/library.png", { frameWidth: 16, frameHeight: 16 });
     preloadAudio(this);
   }
@@ -77,6 +80,9 @@ export class BootScene extends Phaser.Scene {
     }
     for (const key of effectSheets) {
       this.anims.create({ key: `${key}-pulse`, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 5 }), frameRate: 14, repeat: -1 });
+    }
+    for (const key of trainingSheets) {
+      this.anims.create({ key: `${key}-idle`, frames: this.anims.generateFrameNumbers(key, { frames: [0, 1] }), frameRate: 3, repeat: -1 });
     }
   }
 }
